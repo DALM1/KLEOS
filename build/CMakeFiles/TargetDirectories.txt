@@ -1,0 +1,3 @@
+/Users/dalm1/Desktop/Reroll/Progra/Kleos/build/CMakeFiles/NetworkMonitoring.dir
+/Users/dalm1/Desktop/Reroll/Progra/Kleos/build/CMakeFiles/edit_cache.dir
+/Users/dalm1/Desktop/Reroll/Progra/Kleos/build/CMakeFiles/rebuild_cache.dir

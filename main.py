@@ -2,6 +2,7 @@ import os
 import subprocess
 
 subprocess.run(["clear"], shell=True)
+subprocess.run("cd build && ./NetworkMonitoring", shell=True)
 
 print(f"                 __________")
 print(f"................~#########%%;~....................")
@@ -23,7 +24,6 @@ print(f"..................\#|%%;,|\....|||||.|..|.........")
 print("\n")
 print("                   $CHEMA")
 print("\n")
-
 
 def choix_1():
     print("Exec scrpt 1")
