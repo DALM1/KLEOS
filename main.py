@@ -50,7 +50,7 @@ def menu():
     elif choix == '3':
         choix_3()
     elif choix == '4':
-        print("Au revoir !")
+        print("Bye")
         exit()
     else:
         print("Choix invalide, veuillez réessayer.")
