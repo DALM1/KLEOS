@@ -1,3 +1,4 @@
-/Users/dalm1/Desktop/Reroll/Progra/Kleos/build/CMakeFiles/NetworkMonitoring.dir
-/Users/dalm1/Desktop/Reroll/Progra/Kleos/build/CMakeFiles/edit_cache.dir
-/Users/dalm1/Desktop/Reroll/Progra/Kleos/build/CMakeFiles/rebuild_cache.dir
+/Users/dalm1/Desktop/reroll/Progra/Kleos/build/CMakeFiles/KleosClient.dir
+/Users/dalm1/Desktop/reroll/Progra/Kleos/build/CMakeFiles/KleosRelay.dir
+/Users/dalm1/Desktop/reroll/Progra/Kleos/build/CMakeFiles/edit_cache.dir
+/Users/dalm1/Desktop/reroll/Progra/Kleos/build/CMakeFiles/rebuild_cache.dir

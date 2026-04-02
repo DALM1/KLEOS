@@ -1,0 +1,14 @@
+main.py
+
+/assets/
+/imgui/
+
+SPEC.md
+/elixir/kleos_hub/_build/
+/elixir/kleos_hub/deps/
+/elixir/kleos_hub/.elixir_ls/
+/elixir/kleos_hub/cover/
+/elixir/kleos_hub/doc/
+/elixir/kleos_hub/tmp/
+/elixir/kleos_hub/erl_crash.dump
+/elixir/kleos_hub/.mnesia/

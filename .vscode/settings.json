@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    ".als.json": "jsonc",
+    "unordered_map": "cpp"
+  }
+}

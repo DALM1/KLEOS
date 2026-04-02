@@ -1,19 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
-project(NetworkMonitoring)
+project(Kleos LANGUAGES C CXX OBJCXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
-# Trouver OpenGL
 find_package(OpenGL REQUIRED)
 
-# Chemins spécifiques pour GLFW
 include_directories(/opt/homebrew/opt/glfw/include)
 
-# Ajouter le chemin pour les bibliothèques
 link_directories(/opt/homebrew/opt/glfw/lib)
 
-# Inclure les fichiers source d'ImGui
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/imgui)
+set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 file(GLOB IMGUI_SOURCES
     ${IMGUI_DIR}/*.cpp
     ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
@@ -22,11 +19,16 @@ file(GLOB IMGUI_SOURCES
 
 include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
-# Ajouter l'exécutable
-add_executable(NetworkMonitoring main.cpp ${IMGUI_SOURCES})
+set_source_files_properties(main.cpp ${SRC_DIR}/image_loader.cpp PROPERTIES LANGUAGE OBJCXX)
 
-# Lier GLFW, OpenGL et ImGui
-target_link_libraries(NetworkMonitoring
+add_executable(KleosClient main.cpp ${IMGUI_SOURCES} ${SRC_DIR}/image_loader.cpp ${SRC_DIR}/image_loader.h)
+
+target_link_libraries(KleosClient
     glfw
     ${OPENGL_gl_LIBRARY}
+    "-framework CoreFoundation"
+    "-framework CoreGraphics"
+    "-framework ImageIO"
 )
+
+add_executable(KleosRelay ${CMAKE_SOURCE_DIR}/relay_server.cpp)

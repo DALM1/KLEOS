@@ -1,8 +1,8 @@
 import os
 import subprocess
 
-subprocess.run(["clear"], shell=True)
-subprocess.run("cd build && ./NetworkMonitoring", shell=True)
+subprocess.run("clear", shell=True)
+subprocess.run("cd build && ./KleosClient", shell=True)
 
 print(f"                 __________")
 print(f"................~#########%%;~....................")
