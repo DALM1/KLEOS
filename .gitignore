@@ -12,3 +12,4 @@ SPEC.md
 /elixir/kleos_hub/tmp/
 /elixir/kleos_hub/erl_crash.dump
 /elixir/kleos_hub/.mnesia/
+/build/
