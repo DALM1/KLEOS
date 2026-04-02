@@ -46,4 +46,3 @@ Kleos est un backend de chat robuste (Elixir + C++), avec un client C++ optionne
 
 ## Notes
 - Les sources ImGui ne sont pas dans le repo. Pour construire le client, définir   KLEOS_IMGUI_DIR vers une installation ou un checkout local d’ImGui.
-- Les artefacts de build sont ignorés par .gitignore.
