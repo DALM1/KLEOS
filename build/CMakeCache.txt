@@ -153,9 +153,7 @@ CMAKE_OSX_ARCHITECTURES:STRING=
 // APIs weak linked. Set to empty string for default value.
 CMAKE_OSX_DEPLOYMENT_TARGET:STRING=14.6
 
-//The product will be built against the headers and libraries located
-// inside the indicated SDK.
-CMAKE_OSX_SYSROOT:PATH=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk
+CMAKE_OSX_SYSROOT:PATH=
 
 //Value Computed by CMake
 CMAKE_PROJECT_COMPAT_VERSION:STATIC=

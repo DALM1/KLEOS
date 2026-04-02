@@ -11,8 +11,10 @@
 		"commands" : 
 		[
 			"add_executable",
+			"target_link_options",
 			"link_directories",
 			"target_link_libraries",
+			"target_compile_definitions",
 			"include_directories"
 		],
 		"files" : 
@@ -27,31 +29,43 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 24,
+				"line" : 26,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 10,
+				"line" : 29,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 26,
+				"line" : 12,
 				"parent" : 0
 			},
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 8,
+				"line" : 31,
 				"parent" : 0
 			},
 			{
-				"command" : 3,
+				"command" : 4,
 				"file" : 0,
-				"line" : 20,
+				"line" : 28,
+				"parent" : 0
+			},
+			{
+				"command" : 5,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 5,
+				"file" : 0,
+				"line" : 22,
 				"parent" : 0
 			}
 		]
@@ -70,6 +84,13 @@
 					"fragment" : "-g -std=gnu++11 -arch arm64 -mmacosx-version-min=14.6"
 				}
 			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 5,
+					"define" : "GL_SILENCE_DEPRECATION"
+				}
+			],
 			"frameworks" : 
 			[
 				{
@@ -79,15 +100,15 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 4,
+					"backtrace" : 6,
 					"path" : "/opt/homebrew/opt/glfw/include"
 				},
 				{
-					"backtrace" : 5,
+					"backtrace" : 7,
 					"path" : "/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui"
 				},
 				{
-					"backtrace" : 5,
+					"backtrace" : 7,
 					"path" : "/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui/backends"
 				}
 			],
@@ -113,6 +134,13 @@
 					"fragment" : "-g -std=gnu++11 -arch arm64 -mmacosx-version-min=14.6"
 				}
 			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 5,
+					"define" : "GL_SILENCE_DEPRECATION"
+				}
+			],
 			"frameworks" : 
 			[
 				{
@@ -122,15 +150,15 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 4,
+					"backtrace" : 6,
 					"path" : "/opt/homebrew/opt/glfw/include"
 				},
 				{
-					"backtrace" : 5,
+					"backtrace" : 7,
 					"path" : "/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui"
 				},
 				{
-					"backtrace" : 5,
+					"backtrace" : 7,
 					"path" : "/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui/backends"
 				}
 			],
@@ -169,11 +197,16 @@
 				"role" : "flags"
 			},
 			{
+				"backtrace" : 2,
+				"fragment" : "-Wl,-syslibroot,/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+				"role" : "flags"
+			},
+			{
 				"fragment" : "-F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks",
 				"role" : "frameworkPath"
 			},
 			{
-				"backtrace" : 2,
+				"backtrace" : 3,
 				"fragment" : "-L/opt/homebrew/opt/glfw/lib",
 				"role" : "libraryPath"
 			},
@@ -182,7 +215,7 @@
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 3,
+				"backtrace" : 4,
 				"fragment" : "-lglfw",
 				"role" : "libraries"
 			},
@@ -191,17 +224,17 @@
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 3,
+				"backtrace" : 4,
 				"fragment" : "-framework CoreFoundation",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 3,
+				"backtrace" : 4,
 				"fragment" : "-framework CoreGraphics",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 3,
+				"backtrace" : 4,
 				"fragment" : "-framework ImageIO",
 				"role" : "libraries"
 			}
@@ -211,23 +244,23 @@
 	"linkLibraries" : 
 	[
 		{
-			"backtrace" : 3,
+			"backtrace" : 4,
 			"fragment" : "glfw"
 		},
 		{
-			"backtrace" : 3,
+			"backtrace" : 4,
 			"fragment" : "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/OpenGL.framework"
 		},
 		{
-			"backtrace" : 3,
+			"backtrace" : 4,
 			"fragment" : "-framework CoreFoundation"
 		},
 		{
-			"backtrace" : 3,
+			"backtrace" : 4,
 			"fragment" : "-framework CoreGraphics"
 		},
 		{
-			"backtrace" : 3,
+			"backtrace" : 4,
 			"fragment" : "-framework ImageIO"
 		}
 	],

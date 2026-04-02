@@ -14,7 +14,6 @@
 #include <array>
 #include <cerrno>
 #include <iostream>
-#include <limits>
 #include <random>
 #include <string>
 #include <unordered_map>
@@ -40,6 +39,7 @@ enum class FrameType : uint8_t {
     Block = 14,
     Unblock = 15,
     Ok = 16,
+    Presence = 17,
 };
 
 struct OfflineMsg {
@@ -150,6 +150,15 @@ std::vector<uint8_t> PayloadFriendList(const std::vector<std::pair<std::string, 
         p.insert(p.end(), e.first.begin(), e.first.end());
         p.push_back(e.second);
     }
+    return p;
+}
+
+std::vector<uint8_t> PayloadPresence(const std::string& handle, uint8_t online) {
+    std::vector<uint8_t> p;
+    if (handle.size() > 0xFFFF) return p;
+    AppendU16(p, static_cast<uint16_t>(handle.size()));
+    p.insert(p.end(), handle.begin(), handle.end());
+    p.push_back(online);
     return p;
 }
 
@@ -627,6 +636,21 @@ static void HandleFrame(int kq, RelayState& state, std::unordered_map<int, ConnS
                 EnableWrite(kq, c.fd);
                 return;
             }
+            if (hub.enabled) {
+                if (!hub.connected) {
+                    QueueFrame(c, FrameType::Error, PayloadError("hub indisponible"));
+                    c.want_close = true;
+                    EnableWrite(kq, c.fd);
+                    return;
+                }
+                uint64_t reqid = ++hub.seq;
+                hub.pending_auth[reqid] = PendingAuth{c.fd, 1, handle};
+                std::string hex = HexEncode(secret_hash.bytes.data(), secret_hash.bytes.size());
+                HubQueueLine(kq, hub, "AUTH REG " + std::to_string(reqid) + " " + handle + " " + hex + "\n");
+                c.stage = ConnState::Stage::AwaitHubAuth;
+                return;
+            }
+
             if (!state.RegisterUser(handle, secret_hash)) {
                 QueueFrame(c, FrameType::Error, PayloadError("handle déjà utilisé"));
                 c.want_close = true;
@@ -651,12 +675,21 @@ static void HandleFrame(int kq, RelayState& state, std::unordered_map<int, ConnS
             EnableWrite(kq, c.fd);
             return;
         }
-        Sha256Digest secret_hash;
-        if (!state.GetSecretHash(handle, secret_hash)) {
-            QueueFrame(c, FrameType::Error, PayloadError("compte introuvable"));
-            c.want_close = true;
-            EnableWrite(kq, c.fd);
-            return;
+        if (hub.enabled) {
+            if (!hub.connected) {
+                QueueFrame(c, FrameType::Error, PayloadError("hub indisponible"));
+                c.want_close = true;
+                EnableWrite(kq, c.fd);
+                return;
+            }
+        } else {
+            Sha256Digest secret_hash;
+            if (!state.GetSecretHash(handle, secret_hash)) {
+                QueueFrame(c, FrameType::Error, PayloadError("compte introuvable"));
+                c.want_close = true;
+                EnableWrite(kq, c.fd);
+                return;
+            }
         }
         c.handle = handle;
         {
@@ -682,6 +715,22 @@ static void HandleFrame(int kq, RelayState& state, std::unordered_map<int, ConnS
             QueueFrame(c, FrameType::Error, PayloadError("auth invalide"));
             c.want_close = true;
             EnableWrite(kq, c.fd);
+            return;
+        }
+        if (hub.enabled) {
+            if (!hub.connected) {
+                QueueFrame(c, FrameType::Error, PayloadError("hub indisponible"));
+                c.want_close = true;
+                EnableWrite(kq, c.fd);
+                return;
+            }
+            uint64_t reqid = ++hub.seq;
+            hub.pending_auth[reqid] = PendingAuth{c.fd, 2, c.handle};
+            std::string nonce_bytes(reinterpret_cast<const char*>(c.nonce.data()), c.nonce.size());
+            std::string nonce_b64 = Base64Encode(nonce_bytes);
+            std::string hmac_hex = HexEncode(hmac.data(), hmac.size());
+            HubQueueLine(kq, hub, "AUTH VERIFY " + std::to_string(reqid) + " " + c.handle + " " + nonce_b64 + " " + hmac_hex + "\n");
+            c.stage = ConnState::Stage::AwaitHubAuth;
             return;
         }
         Sha256Digest secret_hash;
@@ -712,6 +761,13 @@ static void HandleFrame(int kq, RelayState& state, std::unordered_map<int, ConnS
             HubQueueLine(kq, hub, "REL " + std::to_string(reqid) + " LIST " + c.handle + " _\n");
         }
         c.stage = ConnState::Stage::Authed;
+        EnableWrite(kq, c.fd);
+        return;
+    }
+
+    if (c.stage == ConnState::Stage::AwaitHubAuth) {
+        QueueFrame(c, FrameType::Error, PayloadError("auth en cours"));
+        c.want_close = true;
         EnableWrite(kq, c.fd);
         return;
     }
@@ -1091,6 +1147,19 @@ int main(int argc, char** argv) {
                             std::string msgid_s = line.substr(9);
                             uint64_t msgid = static_cast<uint64_t>(std::strtoull(msgid_s.c_str(), nullptr, 10));
                             hub.pending.erase(msgid);
+                        } else if (line.rfind("NOUSER ", 0) == 0) {
+                            std::string msgid_s = line.substr(7);
+                            uint64_t msgid = static_cast<uint64_t>(std::strtoull(msgid_s.c_str(), nullptr, 10));
+                            auto pit = hub.pending.find(msgid);
+                            if (pit != hub.pending.end()) {
+                                int sfd = pit->second.sender_fd;
+                                hub.pending.erase(pit);
+                                auto sit = conns.find(sfd);
+                                if (sit != conns.end()) {
+                                    QueueFrame(sit->second, FrameType::Error, PayloadError("destinataire inconnu"));
+                                    EnableWrite(kq, sfd);
+                                }
+                            }
                         } else if (line.rfind("BLOCKED ", 0) == 0) {
                             std::string msgid_s = line.substr(8);
                             uint64_t msgid = static_cast<uint64_t>(std::strtoull(msgid_s.c_str(), nullptr, 10));
@@ -1101,6 +1170,64 @@ int main(int argc, char** argv) {
                                 auto sit = conns.find(sfd);
                                 if (sit != conns.end()) {
                                     QueueFrame(sit->second, FrameType::Error, PayloadError("message bloqué"));
+                                    EnableWrite(kq, sfd);
+                                }
+                            }
+                        } else if (line.rfind("AUTH_OK ", 0) == 0) {
+                            std::string reqid_s = line.substr(8);
+                            uint64_t reqid = static_cast<uint64_t>(std::strtoull(reqid_s.c_str(), nullptr, 10));
+                            auto itp = hub.pending_auth.find(reqid);
+                            if (itp != hub.pending_auth.end()) {
+                                int sfd = itp->second.sender_fd;
+                                uint8_t kind = itp->second.kind;
+                                std::string handle = itp->second.handle;
+                                hub.pending_auth.erase(itp);
+                                auto sit = conns.find(sfd);
+                                if (sit != conns.end()) {
+                                    ConnState& sc = sit->second;
+                                    if (kind == 1) {
+                                        QueueFrame(sc, FrameType::LoginOk, {});
+                                        sc.want_close = true;
+                                        EnableWrite(kq, sfd);
+                                    } else if (kind == 2 && sc.stage == ConnState::Stage::AwaitHubAuth && sc.handle == handle) {
+                                        state.SetOnline(sc.handle, sc.fd);
+                                        QueueFrame(sc, FrameType::LoginOk, {});
+                                        auto offline = state.TakeOffline(sc.handle);
+                                        for (const auto& m : offline) {
+                                            auto p = PayloadDeliver(m.from, m.text);
+                                            if (!p.empty()) QueueFrame(sc, FrameType::DeliverMessage, p);
+                                        }
+                                        HubQueueLine(kq, hub, "ONLINE " + sc.handle + "\n");
+                                        {
+                                            uint64_t reqid2 = ++hub.seq;
+                                            hub.pending_rel[reqid2] = PendingRel{sc.fd, 1};
+                                            HubQueueLine(kq, hub, "REL " + std::to_string(reqid2) + " LIST " + sc.handle + " _\n");
+                                        }
+                                        sc.stage = ConnState::Stage::Authed;
+                                        EnableWrite(kq, sfd);
+                                    }
+                                }
+                            }
+                        } else if (line.rfind("AUTH_ERR ", 0) == 0 || line.rfind("AUTH_FAIL ", 0) == 0) {
+                            size_t prefix = (line.rfind("AUTH_ERR ", 0) == 0) ? 9 : 10;
+                            std::string rest = line.substr(prefix);
+                            size_t sp = rest.find(' ');
+                            std::string reqid_s = (sp == std::string::npos) ? rest : rest.substr(0, sp);
+                            std::string reason = (sp == std::string::npos) ? "auth invalide" : rest.substr(sp + 1);
+                            uint64_t reqid = static_cast<uint64_t>(std::strtoull(reqid_s.c_str(), nullptr, 10));
+                            auto itp = hub.pending_auth.find(reqid);
+                            if (itp != hub.pending_auth.end()) {
+                                int sfd = itp->second.sender_fd;
+                                uint8_t kind = itp->second.kind;
+                                hub.pending_auth.erase(itp);
+                                auto sit = conns.find(sfd);
+                                if (sit != conns.end()) {
+                                    std::string msg = "auth invalide";
+                                    if (kind == 1 && reason == "exists") msg = "handle déjà utilisé";
+                                    else if (reason == "no_user") msg = "compte introuvable";
+                                    else if (reason == "bad_password") msg = "mot de passe incorrect";
+                                    QueueFrame(sit->second, FrameType::Error, PayloadError(msg));
+                                    sit->second.want_close = true;
                                     EnableWrite(kq, sfd);
                                 }
                             }
@@ -1176,6 +1303,22 @@ int main(int argc, char** argv) {
                                     }
                                     QueueFrame(sit->second, FrameType::FriendListResp, PayloadFriendList(entries));
                                     EnableWrite(kq, sfd);
+                                }
+                            }
+                        } else if (line.rfind("PRESENCE ", 0) == 0) {
+                            std::string rest = line.substr(9);
+                            size_t sp = rest.find(' ');
+                            if (sp == std::string::npos) continue;
+                            std::string handle = rest.substr(0, sp);
+                            std::string state_s = rest.substr(sp + 1);
+                            uint8_t online = (state_s == "online") ? 1 : 0;
+                            if (!IsValidHandle(handle)) continue;
+                            for (auto& kv : conns) {
+                                ConnState& cc = kv.second;
+                                if (cc.stage == ConnState::Stage::Authed) {
+                                    auto p = PayloadPresence(handle, online);
+                                    QueueFrame(cc, FrameType::Presence, p);
+                                    EnableWrite(kq, cc.fd);
                                 }
                             }
                         } else if (line.rfind("DELIVER ", 0) == 0) {

@@ -1,6 +1,8 @@
 defmodule KleosHub.RelayConn do
   @moduledoc false
 
+  import Bitwise
+
   @offline_table :kleos_offline
   @rel_table :kleos_rel
   @user_table :kleos_user
@@ -70,6 +72,7 @@ defmodule KleosHub.RelayConn do
       if user_exists?(handle) do
         :global.register_name({:kleos_handle, handle}, self())
         flush_offline(state.socket, handle)
+        send_line(state.socket, "PRESENCE #{handle} online\n")
         %{state | handles: MapSet.put(state.handles, handle)}
       else
         state
@@ -82,6 +85,7 @@ defmodule KleosHub.RelayConn do
   defp handle_line("OFFLINE " <> handle, state) do
     handle = String.trim(handle)
     :global.unregister_name({:kleos_handle, handle})
+    send_line(state.socket, "PRESENCE #{handle} offline\n")
     %{state | handles: MapSet.delete(state.handles, handle)}
   end
 
@@ -235,7 +239,7 @@ defmodule KleosHub.RelayConn do
               case :mnesia.read({@user_table, handle}) do
                 [{@user_table, ^handle, secret_hash, _ts}] ->
                   expected = :crypto.mac(:hmac, :sha256, secret_hash, nonce)
-                  if :crypto.secure_compare(expected, hmac_bin), do: :ok, else: {:error, :bad_password}
+                  if secure_eq(expected, hmac_bin), do: :ok, else: {:error, :bad_password}
 
                 _ ->
                   {:error, :no_user}
@@ -456,6 +460,17 @@ defmodule KleosHub.RelayConn do
       Base.decode16(hex, case: :mixed)
     rescue
       _ -> :error
+    end
+  end
+
+  defp secure_eq(a, b) when is_binary(a) and is_binary(b) do
+    if byte_size(a) != byte_size(b) do
+      false
+    else
+      :crypto.exor(a, b)
+      |> :binary.bin_to_list()
+      |> Enum.reduce(0, fn byte, acc -> bor(byte, acc) end)
+      |> Kernel.==(0)
     end
   end
 

@@ -3,7 +3,7 @@
 
 # compile CXX with /usr/bin/clang++
 # compile OBJCXX with /usr/bin/clang++
-CXX_DEFINES = 
+CXX_DEFINES = -DGL_SILENCE_DEPRECATION
 
 CXX_INCLUDES = -I/opt/homebrew/opt/glfw/include -I/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui -I/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui/backends -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks
 
@@ -11,7 +11,7 @@ CXX_FLAGSarm64 = -g -std=gnu++11 -arch arm64 -mmacosx-version-min=14.6
 
 CXX_FLAGS = -g -std=gnu++11 -arch arm64 -mmacosx-version-min=14.6
 
-OBJCXX_DEFINES = 
+OBJCXX_DEFINES = -DGL_SILENCE_DEPRECATION
 
 OBJCXX_INCLUDES = -I/opt/homebrew/opt/glfw/include -I/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui -I/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui/backends -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks
 

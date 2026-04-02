@@ -46,6 +46,7 @@ enum class FrameType : uint8_t {
     Block = 14,
     Unblock = 15,
     Ok = 16,
+    Presence = 17,
 };
 
 struct InboundMessage {
@@ -312,6 +313,10 @@ bool ParseError(const std::vector<uint8_t>& payload, std::string& text) {
 bool ParseOk(const std::vector<uint8_t>& payload, std::string& text) {
     return ParseError(payload, text);
 }
+
+struct PresenceEntry {
+    bool online = false;
+};
 
 class ChatClient {
 public:
@@ -625,6 +630,17 @@ private:
                     lines.push_back('\n');
                 }
                 if (!lines.empty()) PushInbound(InboundMessage{"__friends__", lines});
+            } else if (type == FrameType::Presence) {
+                size_t off = 0;
+                std::string handle;
+                uint16_t hl = 0;
+                if (!ReadU16(payload, off, hl)) continue;
+                if (off + hl > payload.size()) continue;
+                handle.assign(reinterpret_cast<const char*>(payload.data() + off), hl);
+                off += hl;
+                if (off >= payload.size()) continue;
+                uint8_t online = payload[off];
+                PushInbound(InboundMessage{"__presence__", handle + "\t" + (online ? "1" : "0")});
             }
         }
         connected_.store(false);
@@ -1005,6 +1021,7 @@ void RenderChatUI(ChatClient& client) {
     static bool friends_requested = false;
     static std::string friends_handle;
     static std::unordered_map<std::string, bool> blocked;
+    static std::unordered_map<std::string, PresenceEntry> presence;
 
     std::string current_handle = client.IsConnected() ? client.LocalHandle() : "";
     if (!current_handle.empty() && (!state_loaded || state_handle != current_handle)) {
@@ -1025,6 +1042,7 @@ void RenderChatUI(ChatClient& client) {
         friends_requested = false;
         friends_handle.clear();
         blocked.clear();
+        presence.clear();
     }
 
     if (client.IsConnected() && !current_handle.empty() && (!friends_requested || friends_handle != current_handle)) {
@@ -1037,6 +1055,16 @@ void RenderChatUI(ChatClient& client) {
         if (msg.from == "server") {
             toast_text = msg.text;
             toast_until_t = ImGui::GetTime() + 4.0;
+            continue;
+        }
+        if (msg.from == "__presence__") {
+            size_t tab = msg.text.find('\t');
+            if (tab != std::string::npos) {
+                std::string peer = msg.text.substr(0, tab);
+                std::string online_s = msg.text.substr(tab + 1);
+                bool on = (online_s == "1");
+                presence[peer].online = on;
+            }
             continue;
         }
         if (msg.from == "__friends__") {
@@ -1081,12 +1109,15 @@ void RenderChatUI(ChatClient& client) {
             state_dirty = true;
             continue;
         }
-        if (conversations.find(msg.from) == conversations.end()) {
-            contacts.push_back(msg.from);
-            conversations[msg.from] = {};
-        }
+        if (conversations.find(msg.from) == conversations.end()) conversations[msg.from] = {};
         conversations[msg.from].push_back(ChatMessage{false, msg.from, msg.text});
-        if (selected < 0 || contacts[static_cast<size_t>(selected)] != msg.from) unread[msg.from] += 1;
+        bool is_friend = std::find(contacts.begin(), contacts.end(), msg.from) != contacts.end();
+        if (!is_friend) {
+            toast_text = "Message reçu d'un utilisateur non ajouté: " + msg.from;
+            toast_until_t = ImGui::GetTime() + 4.0;
+        } else {
+            if (selected < 0 || contacts[static_cast<size_t>(selected)] != msg.from) unread[msg.from] += 1;
+        }
         state_dirty = true;
     }
 
@@ -1244,6 +1275,23 @@ void RenderChatUI(ChatClient& client) {
         ImGui::TextUnformatted("Paramètres");
         ImGui::Spacing();
         ImGui::Text("Connecté en tant que %s", client.LocalHandle().c_str());
+        if (!blocked.empty()) {
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::TextUnformatted("Bloqués");
+            ImGui::Spacing();
+            for (const auto& kv : blocked) {
+                const std::string& b = kv.first;
+                ImGui::TextUnformatted(b.c_str());
+                ImGui::SameLine();
+                ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - 120.0f);
+                if (ImGui::Button(("Débloquer##" + b).c_str(), ImVec2(110, 0))) {
+                    client.Unblock(b);
+                    client.RequestFriendList();
+                }
+            }
+        }
         ImGui::Spacing();
         if (ImGui::Button("Déconnexion", ImVec2(-1, 0))) {
             client.Disconnect();
@@ -1342,6 +1390,9 @@ void RenderChatUI(ChatClient& client) {
         int u = 0;
         auto it_u = unread.find(c);
         if (it_u != unread.end()) u = it_u->second;
+        bool online = false;
+        auto it_p = presence.find(c);
+        if (it_p != presence.end()) online = it_p->second.online;
         if (u > 0) {
             std::string badge = std::to_string(u);
             ImVec2 badge_pad(10, 6);
@@ -1352,6 +1403,10 @@ void RenderChatUI(ChatClient& client) {
             draw_list->AddRectFilled(bmin, bmax, ImGui::GetColorU32(ImVec4(0.70f, 0.74f, 0.78f, 0.92f)), 999.0f);
             draw_list->AddRect(bmin, bmax, ImGui::GetColorU32(ImVec4(1, 1, 1, 0.12f)), 999.0f);
             draw_list->AddText(VAdd(bmin, badge_pad), ImGui::GetColorU32(ImVec4(0.02f, 0.03f, 0.03f, 1.0f)), badge.c_str());
+        } else {
+            ImVec2 dot = VAdd(pmin, ImVec2(pmax.x - pmin.x - 16.0f, 22.0f));
+            ImU32 col = ImGui::GetColorU32(online ? ImVec4(0.90f, 0.94f, 0.98f, 0.90f) : ImVec4(0.65f, 0.70f, 0.74f, 0.50f));
+            draw_list->AddCircleFilled(dot, 4.0f, col, 16);
         }
 
         if (clicked) {

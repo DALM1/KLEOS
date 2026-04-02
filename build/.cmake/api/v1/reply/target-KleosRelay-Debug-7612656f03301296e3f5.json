@@ -11,6 +11,7 @@
 		"commands" : 
 		[
 			"add_executable",
+			"target_link_options",
 			"link_directories",
 			"include_directories"
 		],
@@ -26,25 +27,31 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 34,
+				"line" : 39,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
+				"line" : 40,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
 				"line" : 10,
 				"parent" : 0
 			},
 			{
-				"command" : 2,
+				"command" : 3,
 				"file" : 0,
-				"line" : 8,
-				"parent" : 0
-			},
-			{
-				"command" : 2,
-				"file" : 0,
-				"line" : 20,
+				"line" : 22,
 				"parent" : 0
 			}
 		]
@@ -66,15 +73,15 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 3,
+					"backtrace" : 4,
 					"path" : "/opt/homebrew/opt/glfw/include"
 				},
 				{
-					"backtrace" : 4,
+					"backtrace" : 5,
 					"path" : "/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui"
 				},
 				{
-					"backtrace" : 4,
+					"backtrace" : 5,
 					"path" : "/Users/dalm1/Desktop/reroll/Progra/Kleos/imgui/backends"
 				}
 			],
@@ -108,6 +115,11 @@
 			},
 			{
 				"backtrace" : 2,
+				"fragment" : "-Wl,-syslibroot,/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 3,
 				"fragment" : "-L/opt/homebrew/opt/glfw/lib",
 				"role" : "libraryPath"
 			}
